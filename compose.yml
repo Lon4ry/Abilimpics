@@ -1,0 +1,68 @@
+version: "3.8"
+name: abilimpus
+services:
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./data/nginx:/storage:rw
+    depends_on:
+      - authentication
+
+  store:
+    image: redis:alpine
+    environment:
+      - REDIS_PROTECTED_MODE=no
+    volumes:
+      - ./data/store:/data:rw
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: [ "CMD", "redis-cli", "--raw", "incr", "ping" ]
+      interval: 5s
+      timeout: 10s
+      retries: 3
+
+  database:
+    image: postgres:alpine
+    environment:
+      - POSTGRES_DB=abilimpus
+      - POSTGRES_USER=webserver
+      - POSTGRES_PASSWORD=123456
+      - PGDATA=/var/lib/postgresql/data/pg-data
+    volumes:
+      - ./data/database:/var/lib/postgresql/data/pg-data:rw
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: [ "CMD", "pg_isready" ]
+      interval: 5s
+      timeout: 10s
+      retries: 3
+
+  authentication:
+    image: abilimpus-authentication
+    depends_on:
+      store:
+        condition: service_healthy
+      database:
+        condition: service_healthy
+    env_file: [ '.env' ]
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8080/actuator/health" ]
+      interval: 5s
+      timeout: 10s
+      retries: 3
+
+  globaldata:
+    image: abilimpus-globaldata
+    depends_on:
+      store:
+        condition: service_healthy
+      database:
+        condition: service_healthy
+    env_file: [ '.env' ]
+    

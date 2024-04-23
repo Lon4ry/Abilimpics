@@ -1,0 +1,22 @@
+spring:
+  application:
+    name: authentication
+
+  datasource:
+    driver-class-name: org.postgresql.Driver
+    url: jdbc:${DB_URL}
+    username: ${DB_USER}
+    password: ${DB_PASSWORD}
+
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+
+redis:
+  host: ${REDIS_HOST}
+  port: ${REDIS_PORT}
+
+logging:
+  level:
+    org:
+      springframework: INFO
